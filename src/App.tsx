@@ -1,18 +1,47 @@
 import { useState } from 'react';
-import { UserCheck, Users, ClipboardList, Church } from 'lucide-react';
+import { UserCheck, Users, ClipboardList, Church, LogOut, Loader2 } from 'lucide-react';
+import { useAuth } from './lib/auth';
 import CheckIn from './components/CheckIn';
 import ChildrenList from './components/ChildrenList';
 import AttendanceHistory from './components/AttendanceHistory';
 import RegisterChild from './components/RegisterChild';
+import Login from './pages/Login';
+import Register from './pages/Register';
 import type { Child } from './lib/supabase';
 
 type Tab = 'checkin' | 'children' | 'history';
+type AuthTab = 'login' | 'register';
 
 export default function App() {
+  const { user, loading, signOut } = useAuth();
   const [tab, setTab] = useState<Tab>('checkin');
+  const [authTab, setAuthTab] = useState<AuthTab>('login');
   const [showRegister, setShowRegister] = useState(false);
   const [editChild, setEditChild] = useState<Child | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
+  const [signingOut, setSigningOut] = useState(false);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-sky-50 to-blue-50 flex items-center justify-center">
+        <Loader2 size={40} className="text-sky-400 animate-spin" />
+      </div>
+    );
+  }
+
+  if (!user) {
+    return authTab === 'login' ? (
+      <Login onSwitchToRegister={() => setAuthTab('register')} />
+    ) : (
+      <Register onSwitchToLogin={() => setAuthTab('login')} />
+    );
+  }
+
+  const handleSignOut = async () => {
+    setSigningOut(true);
+    await signOut();
+    setSigningOut(false);
+  };
 
   const tabs: { id: Tab; label: string; icon: React.ReactNode }[] = [
     { id: 'checkin', label: 'Asistencia', icon: <UserCheck size={18} /> },
@@ -23,13 +52,26 @@ export default function App() {
   return (
     <div className="min-h-screen bg-slate-50">
       <header className="bg-white border-b border-gray-100 sticky top-0 z-40 shadow-sm">
-        <div className="max-w-2xl mx-auto px-4 h-16 flex items-center gap-3">
-          <div className="w-9 h-9 rounded-xl bg-sky-500 flex items-center justify-center flex-shrink-0 shadow-sm">
-            <Church size={20} className="text-white" />
+        <div className="max-w-2xl mx-auto px-4 h-16 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-xl bg-sky-500 flex items-center justify-center flex-shrink-0 shadow-sm">
+              <Church size={20} className="text-white" />
+            </div>
+            <div>
+              <h1 className="font-bold text-gray-900 leading-tight text-base">Ministerio de Ninos</h1>
+              <p className="text-xs text-gray-400 leading-tight">Control de asistencia</p>
+            </div>
           </div>
-          <div>
-            <h1 className="font-bold text-gray-900 leading-tight text-base">Ministerio de Ninos</h1>
-            <p className="text-xs text-gray-400 leading-tight">Control de asistencia</p>
+          <div className="flex items-center gap-3">
+            <span className="text-xs text-gray-500 hidden sm:inline">{user.email}</span>
+            <button
+              onClick={handleSignOut}
+              disabled={signingOut}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-red-600 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50"
+            >
+              {signingOut ? <Loader2 size={14} className="animate-spin" /> : <LogOut size={14} />}
+              <span className="hidden sm:inline">Salir</span>
+            </button>
           </div>
         </div>
       </header>
