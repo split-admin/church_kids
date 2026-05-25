@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase, type Attendance, type Child } from '../lib/supabase';
-import { Calendar, ChevronLeft, ChevronRight, Baby, Loader2, ClipboardList } from 'lucide-react';
+import { Calendar, ChevronLeft, ChevronRight, Baby, Loader2, ClipboardList, MessageSquare } from 'lucide-react';
 
 type AttendanceWithChild = Attendance & { child: Child };
 
@@ -12,6 +12,28 @@ function formatDate(d: string) {
 
 function formatTime(ts: string) {
   return new Date(ts).toLocaleTimeString('es', { hour: '2-digit', minute: '2-digit' });
+}
+
+function getPhysBadge(cond?: string) {
+  switch (cond) {
+    case 'Sano': return { label: 'Sano', emoji: '👍', bg: 'bg-emerald-50 text-emerald-700 border-emerald-100' };
+    case 'Lesión': return { label: 'Golpes/Rasguños', emoji: '🤕', bg: 'bg-amber-50 text-amber-700 border-amber-100' };
+    case 'Enfermo': return { label: 'Enfermo', emoji: '🤒', bg: 'bg-red-50 text-red-700 border-red-100' };
+    case 'Cansado': return { label: 'Cansado', emoji: '😴', bg: 'bg-blue-50 text-blue-700 border-blue-100' };
+    case 'Otro': return { label: 'Otro', emoji: '✏️', bg: 'bg-gray-50 text-gray-600 border-gray-200' };
+    default: return null;
+  }
+}
+
+function getEmotBadge(cond?: string) {
+  switch (cond) {
+    case 'Feliz': return { label: 'Feliz', emoji: '😊', bg: 'bg-emerald-50 text-emerald-700 border-emerald-100' };
+    case 'Calmado': return { label: 'Calmado', emoji: '😌', bg: 'bg-emerald-50 text-emerald-700 border-emerald-100' };
+    case 'Triste': return { label: 'Triste', emoji: '😢', bg: 'bg-amber-50 text-amber-700 border-amber-100' };
+    case 'Llorando': return { label: 'Llorando/Asustado', emoji: '😭', bg: 'bg-red-50 text-red-700 border-red-100' };
+    case 'Enojado': return { label: 'Enojado', emoji: '😠', bg: 'bg-red-50 text-red-700 border-red-100' };
+    default: return null;
+  }
 }
 
 export default function AttendanceHistory() {
@@ -111,7 +133,7 @@ export default function AttendanceHistory() {
           <h3 className="font-semibold text-gray-700 capitalize text-sm">{formatDate(date)}</h3>
           {!loading && (
             <span className="text-xs bg-amber-100 text-amber-700 font-semibold px-2.5 py-1 rounded-full">
-              {records.length} nino{records.length !== 1 ? 's' : ''}
+              {records.length} niño{records.length !== 1 ? 's' : ''}
             </span>
           )}
         </div>
@@ -123,34 +145,66 @@ export default function AttendanceHistory() {
         ) : records.length === 0 ? (
           <div className="text-center py-8">
             <Baby size={40} className="text-gray-200 mx-auto mb-2" />
-            <p className="text-sm text-gray-400">Sin registros para este dia</p>
+            <p className="text-sm text-gray-400">Sin registros para este día</p>
           </div>
         ) : (
-          <div className="space-y-2">
-            {records.map((r, i) => (
-              <div
-                key={r.id}
-                className="flex items-center gap-4 p-3 rounded-xl hover:bg-gray-50 transition-colors"
-              >
-                <span className="text-xs text-gray-300 font-mono w-5 text-right flex-shrink-0">{i + 1}</span>
-                <div className="w-10 h-10 rounded-full overflow-hidden bg-gray-100 flex-shrink-0">
-                  {r.child?.photo_url ? (
-                    <img src={r.child.photo_url} alt={r.child.full_name} className="w-full h-full object-cover" />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center">
-                      <Baby size={16} className="text-gray-300" />
+          <div className="space-y-3">
+            {records.map((r, i) => {
+              const phys = getPhysBadge(r.physical_condition);
+              const emot = getEmotBadge(r.emotional_condition);
+              return (
+                <div
+                  key={r.id}
+                  className="p-4 rounded-xl border border-gray-50 bg-white hover:bg-gray-50/50 transition-colors space-y-3"
+                >
+                  <div className="flex items-center gap-3">
+                    <span className="text-xs text-gray-300 font-mono w-5 text-right flex-shrink-0">{i + 1}</span>
+                    <div className="w-10 h-10 rounded-full overflow-hidden bg-gray-100 flex-shrink-0">
+                      {r.child?.photo_url ? (
+                        <img src={r.child.photo_url} alt={r.child.full_name} className="w-full h-full object-cover" />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center">
+                          <Baby size={16} className="text-gray-300" />
+                        </div>
+                      )}
                     </div>
-                  )}
+                    <div className="flex-1 min-w-0">
+                      <p className="font-semibold text-gray-800 text-sm truncate">{r.child?.full_name ?? 'Desconocido'}</p>
+                      <p className="text-xs text-gray-400 truncate">
+                        Tutor: {r.child?.parent1_name} {r.child?.parent1_phone && `(${r.child.parent1_phone})`}
+                      </p>
+                    </div>
+                    <span className="text-xs text-gray-400 flex-shrink-0 font-mono">
+                      {formatTime(r.checked_in_at)}
+                    </span>
+                  </div>
+
+                  {/* Conditions & Notes Row */}
+                  <div className="pl-8 flex flex-col gap-2">
+                    <div className="flex flex-wrap gap-1.5">
+                      {phys && (
+                        <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium border ${phys.bg}`}>
+                          <span>{phys.emoji}</span>
+                          <span>{phys.label}</span>
+                        </span>
+                      )}
+                      {emot && (
+                        <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium border ${emot.bg}`}>
+                          <span>{emot.emoji}</span>
+                          <span>{emot.label}</span>
+                        </span>
+                      )}
+                    </div>
+                    {r.notes && (
+                      <div className="text-xs text-gray-600 bg-gray-50 border border-gray-100 p-2.5 rounded-lg flex items-start gap-2 max-w-full">
+                        <MessageSquare size={13} className="text-gray-400 mt-0.5 flex-shrink-0" />
+                        <span className="break-words">{r.notes}</span>
+                      </div>
+                    )}
+                  </div>
                 </div>
-                <div className="flex-1 min-w-0">
-                  <p className="font-medium text-gray-800 text-sm truncate">{r.child?.full_name ?? 'Desconocido'}</p>
-                  <p className="text-xs text-gray-400 truncate">{r.child?.parent1_name}</p>
-                </div>
-                <span className="text-xs text-gray-400 flex-shrink-0 font-mono">
-                  {formatTime(r.checked_in_at)}
-                </span>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>

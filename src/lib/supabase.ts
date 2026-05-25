@@ -23,6 +23,8 @@ export type Attendance = {
   child_id: string;
   checked_in_at: string;
   event_date: string;
+  physical_condition?: string;
+  emotional_condition?: string;
   notes: string;
   created_at: string;
   children?: Child;

@@ -1,15 +1,16 @@
 import { useState } from 'react';
-import { UserCheck, Users, ClipboardList, Church, LogOut, Loader2 } from 'lucide-react';
+import { UserCheck, Users, ClipboardList, Church, LogOut, Loader2, BarChart3 } from 'lucide-react';
 import { useAuth } from './lib/auth';
 import CheckIn from './components/CheckIn';
 import ChildrenList from './components/ChildrenList';
 import AttendanceHistory from './components/AttendanceHistory';
+import ConditionsReport from './components/ConditionsReport';
 import RegisterChild from './components/RegisterChild';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import type { Child } from './lib/supabase';
 
-type Tab = 'checkin' | 'children' | 'history';
+type Tab = 'checkin' | 'children' | 'history' | 'reports';
 type AuthTab = 'login' | 'register';
 
 export default function App() {
@@ -45,8 +46,9 @@ export default function App() {
 
   const tabs: { id: Tab; label: string; icon: React.ReactNode }[] = [
     { id: 'checkin', label: 'Asistencia', icon: <UserCheck size={18} /> },
-    { id: 'children', label: 'Ninos', icon: <Users size={18} /> },
+    { id: 'children', label: 'Niños', icon: <Users size={18} /> },
     { id: 'history', label: 'Historial', icon: <ClipboardList size={18} /> },
+    { id: 'reports', label: 'Reportes', icon: <BarChart3 size={18} /> },
   ];
 
   return (
@@ -97,7 +99,7 @@ export default function App() {
         </div>
       </div>
 
-      <main className="max-w-2xl mx-auto px-4 py-6">
+      <main className={`${tab === 'reports' ? 'max-w-4xl' : 'max-w-2xl'} mx-auto px-4 py-6`}>
         {tab === 'checkin' && (
           <CheckIn onCheckedIn={() => setRefreshKey(k => k + 1)} />
         )}
@@ -109,6 +111,7 @@ export default function App() {
           />
         )}
         {tab === 'history' && <AttendanceHistory />}
+        {tab === 'reports' && <ConditionsReport />}
       </main>
 
       {showRegister && (
